@@ -97,7 +97,6 @@ namespace ConsoleApp2
             while (Is("elsif"))
             {
                 Eat();
-
                 counters.Add(ParseBlock());
                 elsifCount++;
             }
@@ -112,17 +111,19 @@ namespace ConsoleApp2
                 counters.Add(ParseBlock());
             }
 
-            Expect("end");
+            if (Is("end"))
+            {
+                Eat(); 
 
-            // Классиф  if
-            if (elsifCount == 0 && !hasElse)
-                counters.IfEnd++;
-            else if (elsifCount == 0 && hasElse)
-                counters.IfElse++;
-            else if (elsifCount >= 1 && hasElse)
-                counters.IfElsifElse++;
-            else if (elsifCount >= 1 && !hasElse)
-                counters.IfElsifEnd++;
+                if (elsifCount == 0 && !hasElse)
+                    counters.IfEnd++;
+                else if (elsifCount == 0 && hasElse)
+                    counters.IfElse++;
+                else if (elsifCount >= 1 && hasElse)
+                    counters.IfElsifElse++;
+                else if (elsifCount >= 1 && !hasElse)
+                    counters.IfElsifEnd++;
+            }
 
             return counters;
         }

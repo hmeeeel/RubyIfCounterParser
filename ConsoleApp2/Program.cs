@@ -36,10 +36,10 @@ namespace ConsoleApp2
             var result = parser.ParseProgram();
 
             Console.WriteLine("Подсчёт:");
-            Console.WriteLine($"if-end:         {result.IfEnd}");
-            Console.WriteLine($"if-else:        {result.IfElse}");
-            Console.WriteLine($"if-elsif-else:  {result.IfElsifElse}");
-            Console.WriteLine($"if-elsif-end:   {result.IfElsifEnd}");
+            Console.WriteLine($"if-end:             {result.IfEnd}");
+            Console.WriteLine($"if-else-end:        {result.IfElse}");
+            Console.WriteLine($"if-elsif-else-end:  {result.IfElsifElse}");
+            Console.WriteLine($"if-elsif-end:       {result.IfElsifEnd}");
         }
     }
 }
