@@ -1,0 +1,43 @@
+﻿<Window x:Class="metrics.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:metrics"
+        mc:Ignorable="d"
+        Title="MainWindow" Height="450" Width="800">
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+
+        <!-- Кнопки -->
+        <StackPanel Orientation="Horizontal" Grid.Row="0" Margin="0 0 0 5">
+            <Button x:Name="BtnLoadFile" Content="Загрузить файл" Width="120" Margin="0 0 5 0" Click="BtnLoadFile_Click"/>
+            <Button x:Name="BtnAnalyze" Content="Анализировать" Width="120" Click="BtnAnalyze_Click"/>
+        </StackPanel>
+
+        <!-- Поле ввода кода -->
+        <TextBox x:Name="TxtCodeInput" Grid.Row="1" 
+                 AcceptsReturn="True" VerticalScrollBarVisibility="Auto"
+                 HorizontalScrollBarVisibility="Auto" FontFamily="Consolas" 
+                 FontSize="14" TextWrapping="NoWrap"/>
+
+        <!-- Метрики -->
+        <TextBlock Grid.Row="2" x:Name="TxtMetrics" Margin="0 5 0 5" 
+                   FontWeight="Bold" Text="Метрики будут показаны здесь"/>
+
+        <!-- Общая таблица -->
+        <DataGrid x:Name="GridResults" Grid.Row="3" AutoGenerateColumns="False" IsReadOnly="True">
+            <DataGrid.Columns>
+                <DataGridTextColumn Header="Оператор" Binding="{Binding Operator}" Width="*"/>
+                <DataGridTextColumn Header="Кол-во" Binding="{Binding OperatorCount}" Width="80"/>
+                <DataGridTextColumn Header="Операнд" Binding="{Binding Operand}" Width="*"/>
+                <DataGridTextColumn Header="Кол-во" Binding="{Binding OperandCount}" Width="80"/>
+            </DataGrid.Columns>
+        </DataGrid>
+    </Grid>
+</Window>
