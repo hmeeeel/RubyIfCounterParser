@@ -281,13 +281,7 @@ namespace metrics
 
 
             // метрики
-            TxtMetrics.Text = $"η1 (операторы): {eta1}\n" +
-                              $"η2 (операнды): {eta2}\n" +
-                              $"N1 (все операторы): {N1}\n" +
-                              $"N2 (все операнды): {N2}\n" +
-                              $"Словарь: {eta}, Длина: {N}\n" +
-                              $"Объём: {V:F3}, Сложность: {D:F3}" +
-                              "\n" +
+            TxtMetrics.Text = $"N1 (все операторы): {N1}\n" +
                               $"Абсолютная сложность (всего ветвлений): {cfAbsolute}\n" +
                               $"Относительная сложность: {cfRelative:F3}\n" +
                               $"Максимальная глубина вложенности: {cfMaxDepth - 1}";
@@ -308,9 +302,6 @@ namespace metrics
                     OperandCount = i < opdKeys.Count ? operands[opdKeys[i]] : 0
                 });
             }
-
-            GridResults.ItemsSource = null;
-            GridResults.ItemsSource = rows;
         }
     }
 
