@@ -81,6 +81,7 @@ namespace metrics
             public bool HasElseIf;
             public bool HasIn;
             public Block(string kind) { Kind = kind; }
+            public int OpenIndex;
         }
 
         private void BtnAnalyze_Click(object sender, RoutedEventArgs e)
@@ -103,7 +104,9 @@ namespace metrics
             string prevType = null;
             string prevLexeme = null;
 
-            var branchingKeywords = new List<string> { "IF", "CASE", "SWITCH", "FOR", "WHILE", "UNTIL", "UNLESS" };
+            int tokenIndex = 0; 
+            var closedBranch = new List<(int start, int end)>();
+            var branchingKeywords = new List<string> { "IF", "CASE", "FOR", "WHILE", "UNTIL", "UNLESS" };
 
             int cfAbsolute = 0;
             int cfMaxDepth = 0;
@@ -112,7 +115,7 @@ namespace metrics
             foreach (var line in File.ReadLines("tokens.txt"))
             {
                 if (!line.StartsWith("<")) continue;
-
+                tokenIndex++;
                 string type = GetTypeFromToken(line);
                 string lexeme = GetLexemeFromToken(line);
 
@@ -130,18 +133,12 @@ namespace metrics
                     case "BEGIN":
                     case "CASE":
                     case "UNLESS":
-                        stack.Push(new Block(type.ToUpperInvariant()));
-
-                        if (branchingKeywords.Contains(type.ToUpperInvariant()))
                         {
-                            cfAbsolute++;       
-                            currentDepth++;    
-                            if (currentDepth > cfMaxDepth)
-                            {
-                                cfMaxDepth = currentDepth;
-                            }
+                            var blk = new Block(type.ToUpperInvariant()) { OpenIndex = tokenIndex };
+                            stack.Push(blk);
+                            break;
+
                         }
-                        break;
 
                     case "OPERATOR" when lexeme == "(":
                         if (prevType == "IDENTIFIER" ||
@@ -208,7 +205,7 @@ namespace metrics
 
                             if (branchingKeywords.Contains(blk.Kind))
                             {
-                                currentDepth--;
+                                closedBranch.Add((blk.OpenIndex, tokenIndex)); // фиксируем только ЗАКРЫТЫЕ
                             }
                         }
                         else
@@ -274,17 +271,18 @@ namespace metrics
             double V = (eta > 0) ? N * Math.Log(eta, 2) : 0;
             double D = (eta2 > 0) ? (eta1 / 2.0) * (N2 / (double)eta2) : 0;
 
-
+            cfAbsolute = closedBranch.Count;
+            int cfMaxDepth1 = ComputeMaxDepthFromClosed(closedBranch);
+            int cfMaxDepth0 = (cfMaxDepth1 == 0) ? 0 : cfMaxDepth1 - 1;
             double cfRelative = (N1 > 0) ? cfAbsolute / (double)N1 : 0.0;
 
             //////////////////////////////////////////////////
-
 
             // метрики
             TxtMetrics.Text = $"N1 (все операторы): {N1}\n" +
                               $"Абсолютная сложность (всего ветвлений): {cfAbsolute}\n" +
                               $"Относительная сложность: {cfRelative:F3}\n" +
-                              $"Максимальная глубина вложенности: {cfMaxDepth - 1}";
+                              $"Максимальная глубина вложенности: {cfMaxDepth0}";
 
             // объединяем в одну таблицу
             var rows = new List<ResultRow>();
@@ -302,6 +300,32 @@ namespace metrics
                     OperandCount = i < opdKeys.Count ? operands[opdKeys[i]] : 0
                 });
             }
+        }
+        private static int ComputeMaxDepthFromClosed(List<(int start, int end)> spans)
+        {
+            if (spans == null || spans.Count == 0) return 0;
+
+            var events = new List<(int pos, int delta)>(spans.Count * 2);
+            foreach (var (start, end) in spans)
+            {
+                events.Add((start, +1));
+                events.Add((end, -1));
+            }
+
+            // На одинаковых позициях сначала -1, потом +1 (чтобы не раздувать глубину)
+            events.Sort((a, b) =>
+            {
+                int c = a.pos.CompareTo(b.pos);
+                return c != 0 ? c : a.delta.CompareTo(b.delta);
+            });
+
+            int cur = 0, max = 0;
+            foreach (var (_, d) in events)
+            {
+                cur += d;
+                if (cur > max) max = cur;
+            }
+            return max;
         }
     }
 
