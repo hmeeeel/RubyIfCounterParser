@@ -102,6 +102,7 @@ namespace metrics
 
             string prevType = null;
             string prevLexeme = null;
+            var declaredFunctions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
             foreach (var line in File.ReadLines("tokens.txt"))
             {
@@ -218,7 +219,12 @@ namespace metrics
                             // случай объявления функции
                             if (prevType == "DEF")
                             {
-                                Inc(operators, lexeme); // имя функции = операнд
+                                declaredFunctions.Add(lexeme);
+                                Inc(operands, lexeme); // имя функции = операнд
+                            }
+                            else if (declaredFunctions.Contains(lexeme))
+                            {
+                                Inc(operators, lexeme);
                             }
                             else
                             {
@@ -262,22 +268,32 @@ namespace metrics
                               $"N1 (все операторы): {N1}\n" +
                               $"N2 (все операнды): {N2}\n" +
                               $"Словарь: {eta}, Длина: {N}\n" +
-                              $"Объём: {V:F3}, Сложность: {D:F3}";
+                              $"Объём: {V:F3},";
 
             // объединяем в одну таблицу
             var rows = new List<ResultRow>();
             int max = Math.Max(operators.Count, operands.Count);
-            var opKeys = operators.Keys.ToList();
-            var opdKeys = operands.Keys.ToList();
+
+            var sortedOperators = operators
+                .OrderByDescending(kv => kv.Value)
+                .ToList();
+
+            var sortedOperands = operands
+                .OrderByDescending(kv => kv.Value)
+                .ToList();
+
+
+            //var opKeys = operators.Keys.ToList();
+            //var opdKeys = operands.Keys.ToList();
 
             for (int i = 0; i < max; i++)
             {
                 rows.Add(new ResultRow
                 {
-                    Operator = i < opKeys.Count ? opKeys[i] : "",
-                    OperatorCount = i < opKeys.Count ? operators[opKeys[i]] : 0,
-                    Operand = i < opdKeys.Count ? opdKeys[i] : "",
-                    OperandCount = i < opdKeys.Count ? operands[opdKeys[i]] : 0
+                    Operator = i < sortedOperators.Count ? sortedOperators[i].Key : "",
+                    OperatorCount = i < sortedOperators.Count ? sortedOperators[i].Value : 0,
+                    Operand = i < sortedOperands.Count ? sortedOperands[i].Key : "",
+                    OperandCount = i < sortedOperands.Count ? sortedOperands[i].Value : 0
                 });
             }
 
