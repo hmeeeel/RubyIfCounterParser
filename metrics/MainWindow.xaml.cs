@@ -80,6 +80,7 @@ namespace metrics
             public bool HasWhen;
             public bool HasElseIf;
             public bool HasIn;
+            public int? CurrentWhenStart;
             public Block(string kind) { Kind = kind; }
             public int OpenIndex;
         }
@@ -106,7 +107,7 @@ namespace metrics
 
             int tokenIndex = 0; 
             var closedBranch = new List<(int start, int end)>();
-            var branchingKeywords = new List<string> { "IF", "CASE", "FOR", "WHILE", "UNTIL", "UNLESS" };
+            var branchingKeywords = new List<string> { "IF", "FOR", "WHILE", "UNTIL", "UNLESS" };
 
             int cfAbsolute = 0;
             int cfMaxDepth = 0;
@@ -176,17 +177,45 @@ namespace metrics
                         break;
 
                     // промежуточные
-                    case "ELSE":
-                        if (stack.Count > 0)
-                            stack.Peek().HasElse = true;
-                        break;
+                    //case "ELSE":
+                    //    if (stack.Count > 0)
+                    //        stack.Peek().HasElse = true;
+                    //    break;
                     case "ELSIF":
                         if (stack.Count > 0 && stack.Peek().Kind == "IF")
                             stack.Peek().HasElseIf = true;
                         break;
                     case "WHEN":
                         if (stack.Count > 0 && stack.Peek().Kind == "CASE")
-                            stack.Peek().HasWhen = true;
+                        {
+                            var caseBlk = stack.Peek();
+                            // закр пред WHEN, если он был открыт
+                            if (caseBlk.CurrentWhenStart.HasValue)
+                                closedBranch.Add((caseBlk.CurrentWhenStart.Value, tokenIndex));
+
+                            caseBlk.CurrentWhenStart = tokenIndex;
+                            caseBlk.HasWhen = true;
+                            Inc(operators, "WHEN_BRANCH");
+                        }
+                        break;
+
+                    case "ELSE":
+                        if (stack.Count > 0)
+                        {
+                            var top = stack.Peek();
+                            if (top.Kind == "CASE")
+                            {
+                                // при входе в ELSE закр текущий WHEN (если был)
+                                if (top.CurrentWhenStart.HasValue)
+                                {
+                                    closedBranch.Add((top.CurrentWhenStart.Value, tokenIndex));
+                                    top.CurrentWhenStart = null;
+                                }
+                                //  ELSE - отд ветка
+                                // top.ElseStart = tokenIndex; 
+                            }
+                            top.HasElse = true;
+                        }
                         break;
 
                     // закрывающий
@@ -194,6 +223,20 @@ namespace metrics
                         if (stack.Count > 0)
                         {
                             var blk = stack.Pop();
+
+                            // ДО формирования имени блока — закроем последнюю ветку WHEN в CASE
+                            if (blk.Kind == "CASE")
+                            {
+                                if (blk.CurrentWhenStart.HasValue)
+                                {
+                                    closedBranch.Add((blk.CurrentWhenStart.Value, tokenIndex));
+                                    blk.CurrentWhenStart = null;
+                                }
+                                // если считаете ELSE как ветку:
+                                // if (blk.ElseStart.HasValue)
+                                //     closedBranch.Add((blk.ElseStart.Value, tokenIndex));
+                            }
+
                             string name = blk.Kind switch
                             {
                                 "IF" => blk.HasElse || blk.HasElseIf ? "IF_ELSE_BLOCK" : "IF_BLOCK",
@@ -203,9 +246,10 @@ namespace metrics
                             };
                             Inc(operators, name);
 
+                            // добавляем интервал только для настоящих ветвлений (CASE убран)
                             if (branchingKeywords.Contains(blk.Kind))
                             {
-                                closedBranch.Add((blk.OpenIndex, tokenIndex)); // фиксируем только ЗАКРЫТЫЕ
+                                closedBranch.Add((blk.OpenIndex, tokenIndex));
                             }
                         }
                         else
